@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>WOLKE AI · Client Demo</title>
+  <meta name="description" content="Interaktive Wolke AI Demo für Lebensmittelgroßhandel und Importeure" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">W</div>
+        <div>
+          <div class="brand-name">WOLKE <span>AI</span></div>
+          <div class="brand-sub">Commercial Intelligence</div>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="Demo Navigation">
+        <button class="nav-item nav-root active" data-view="home">
+          <span class="nav-icon">⌂</span><span>Übersicht</span>
+        </button>
+
+        <div class="nav-group open" data-group="orders">
+          <button class="nav-group-title" data-toggle="orders" aria-expanded="true">
+            <span class="nav-icon">↧</span><span>Bestellungen</span><span class="chevron">⌄</span>
+          </button>
+          <div class="nav-children">
+            <button class="nav-item" data-view="whatsapp">WhatsApp</button>
+            <button class="nav-item" data-view="email">E-Mail</button>
+            <button class="nav-item" data-view="phone">Telefon <span class="nav-note">Konzept</span></button>
+          </div>
+        </div>
+
+        <div class="nav-group open" data-group="sales">
+          <button class="nav-group-title" data-toggle="sales" aria-expanded="true">
+            <span class="nav-icon">◎</span><span>Kunden & Vertrieb</span><span class="chevron">⌄</span>
+          </button>
+          <div class="nav-children">
+            <button class="nav-item" data-view="customer">Kundenprofil</button>
+            <button class="nav-item" data-view="opportunities">Verkaufschancen</button>
+            <button class="nav-item" data-view="actions">Vertriebsaktionen <span class="nav-badge hidden" id="salesActionBadge">1</span></button>
+          </div>
+        </div>
+
+        <div class="nav-group" data-group="delivery">
+          <button class="nav-group-title" data-toggle="delivery" aria-expanded="false">
+            <span class="nav-icon">▣</span><span>Lieferung & Vorgänge</span><span class="chevron">⌄</span>
+          </button>
+          <div class="nav-children">
+            <a class="nav-item nav-link" href="https://technoway-wolke.vercel.app/apps/admin-panel.html" target="_blank" rel="noopener noreferrer">Technoway-Demo ↗</a>
+          </div>
+        </div>
+
+        <div class="nav-group open" data-group="management">
+          <button class="nav-group-title" data-toggle="management" aria-expanded="true">
+            <span class="nav-icon">◇</span><span>Geschäftsführung</span><span class="chevron">⌄</span>
+          </button>
+          <div class="nav-children">
+            <button class="nav-item" data-view="decisions">Offene Entscheidungen</button>
+            <button class="nav-item" data-view="history">Entscheidungshistorie</button>
+          </div>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="footer-status"><span class="status-dot"></span> Lokale Demo</div>
+        <p>Alle Zahlen und Kunden sind Beispieldaten. Keine reale ERP-, Telefon- oder Nachrichtenverbindung.</p>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="top-left">
+          <button class="mobile-menu" id="mobileMenu" aria-label="Menü öffnen">☰</button>
+          <div class="breadcrumbs" id="breadcrumbs">Plattform <span>›</span> <b>Übersicht</b></div>
+        </div>
+        <div class="top-actions">
+          <span class="demo-chip">Beispieldaten</span>
+          <button class="ghost-button" id="resetDemo">Demo zurücksetzen</button>
+        </div>
+      </header>
+
+      <div class="workspace" id="workspace"></div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop hidden" id="modalBackdrop" role="presentation"></div>
+  <section class="modal hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <div>
+        <div class="eyebrow" id="modalEyebrow">DETAIL</div>
+        <h2 id="modalTitle">Detail</h2>
+      </div>
+      <button class="modal-close" id="modalClose" aria-label="Schließen">×</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>
