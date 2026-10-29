@@ -10,6 +10,7 @@ const state = {
   activeCampaign: false,
   campaignProgress: 0,
   dismissedCases: new Set(),
+  intelMode: 'clear',
 };
 
 const VIEW_META = {
@@ -123,6 +124,7 @@ const OPPORTUNITIES = [
 const INTELLIGENCE_CASES = {
   margin: {
     type: 'PREIS & MARGE', title: 'Realisierte Marge driftet bei ähnlichem Geschäft auseinander',
+    metric: '−2,8 PP', submetric: 'bei 14 ähnlichen Kunden',
     text: 'Bei vergleichbaren Mengen und Kundentypen entwickelt sich die realisierte Marge für dieselbe Artikelgruppe auffällig unterschiedlich.',
     tag: 'Beispiel ansehen', mode: 'example',
     recognized: 'Bei 14 Kunden derselben Gruppe sinkt die realisierte Marge auf Artikelgruppe X, obwohl Umsatz und Bestellmenge relativ stabil bleiben.',
@@ -132,6 +134,7 @@ const INTELLIGENCE_CASES = {
   },
   stock: {
     type: 'BESTAND & KAPITAL', title: 'Bestand von Brand X wächst schneller als der Absatz',
+    metric: '+31 % Bestand', submetric: 'Absatz nur +4 %',
     text: 'Ein Teil des Sortiments bindet zunehmend Kapital. Management kann entscheiden, ob Einkauf reduziert oder Vertrieb aktiviert wird.',
     tag: 'Beispiel ansehen', mode: 'example management',
     recognized: 'Der Bestand von Brand X ist in acht Wochen deutlich gestiegen, während der Absatz nicht entsprechend mitgewachsen ist.',
@@ -142,6 +145,7 @@ const INTELLIGENCE_CASES = {
   },
   assortment: {
     type: 'KUNDEN & SORTIMENT', title: 'Welche Artikel fehlen bei ähnlich einkaufenden Kunden?',
+    metric: '6 Lücken', submetric: 'bei Kunde 10231',
     text: 'Wolke sucht keine beliebigen Cross-Sells, sondern Unterschiede zwischen wirtschaftlich vergleichbaren Kundenprofilen.',
     tag: 'Beispiel ansehen', mode: 'example',
     recognized: 'Mehrere Kunden haben ähnliche Einkaufsprofile, aber einzelne Artikelgruppen sind bei bestimmten Accounts systematisch unterrepräsentiert.',
@@ -151,6 +155,7 @@ const INTELLIGENCE_CASES = {
   },
   customerChange: {
     type: 'KUNDENENTWICKLUNG', title: 'Umsatz −8 %. Aber ist der Kunde wirklich schwächer geworden?',
+    metric: '−8 % Umsatz', submetric: 'Kategorie Y −27 %',
     text: 'Wolke zerlegt die Veränderung in Frequenz, Kategorien, Verfügbarkeit und Produktmix, bevor daraus eine Vertriebsaktion wird.',
     tag: 'Beispiel ansehen', mode: 'example',
     recognized: 'Der Umsatz eines Kunden fällt, während Bestellfrequenz und Gesamtmenge fast stabil bleiben. Der Rückgang konzentriert sich auf eine Warengruppe.',
@@ -160,6 +165,7 @@ const INTELLIGENCE_CASES = {
   },
   demand: {
     type: 'NACHFRAGE & EINKAUF', title: 'Was könnte vor dem nächsten Wareneingang knapp werden?',
+    metric: 'Knapp vor Wareneingang?', submetric: 'Bestand + PO + Lieferzeit',
     text: 'Nachfrage, Bestand, offene Bestellungen und reale Lieferzeiten müssen gemeinsam betrachtet werden.',
     tag: 'Hypothese besprechen', mode: 'hypothesis',
     recognized: 'Hypothese: Wolke könnte Artikel markieren, deren erwarteter Bedarf den verfügbaren Bestand vor dem nächsten realistischen Wareneingang übersteigt.',
@@ -169,6 +175,7 @@ const INTELLIGENCE_CASES = {
   },
   priceResponse: {
     type: 'PREISREAKTION', title: 'Wie reagierten ähnliche Kunden auf vergangene Preisänderungen?',
+    metric: 'Preis ↗ · Menge?', submetric: 'historische Reaktion',
     text: 'Nicht als „optimaler KI-Preis“, sondern als historische Evidenz für die nächste Preisentscheidung.',
     tag: 'Hypothese besprechen', mode: 'hypothesis',
     recognized: 'Hypothese: Historische Preisänderungen können zeigen, bei welchen Kundentypen Mengen stabil blieben und wo deutliche Reaktionen folgten.',
@@ -178,6 +185,7 @@ const INTELLIGENCE_CASES = {
   },
   newBrand: {
     type: 'NEUE MARKE / PRODUKT', title: 'Welche bestehenden Kunden sollten eine neue Marke zuerst sehen?',
+    metric: '27 passende Kunden?', submetric: 'für die erste Vertriebswelle',
     text: 'Kundenähnlichkeit, verwandte Kategorien und vergangene Produkteinführungen können die erste Vertriebswelle priorisieren.',
     tag: 'Hypothese besprechen', mode: 'hypothesis',
     recognized: 'Hypothese: Für eine neue Marke kann Wolke bestehende Accounts priorisieren, deren Einkaufsmuster zu ähnlichen Produkten und Preispositionen passen.',
@@ -187,6 +195,7 @@ const INTELLIGENCE_CASES = {
   },
   offerFollow: {
     type: 'ANGEBOTE', title: 'Welche offenen Angebote verdienen zuerst Aufmerksamkeit?',
+    metric: '12 Tage offen', submetric: 'Angebot · € 8.400',
     text: 'Angebotsalter, Kundentyp und historische Konversion können helfen, Follow-up zu priorisieren.',
     tag: 'Hypothese besprechen', mode: 'hypothesis',
     recognized: 'Hypothese: Nicht jedes offene Angebot ist gleich wertvoll. Wolke könnte Fälle priorisieren, bei denen Timing, Kunde und Historie für Nachfassen sprechen.',
@@ -196,6 +205,7 @@ const INTELLIGENCE_CASES = {
   },
   top3: {
     type: 'VERTRIEB', title: 'Welche drei Kunden verdienen heute Aufmerksamkeit und warum?',
+    metric: '3 Kunden', submetric: 'mit wirtschaftlichem Grund',
     text: 'Eine komprimierte Priorisierung aus mehreren Signalen, nicht ein weiterer KPI-Feed.',
     tag: 'Hypothese besprechen', mode: 'hypothesis',
     recognized: 'Hypothese: Jeder Vertriebler erhält nur wenige wirtschaftlich begründete Fälle, statt selbst mehrere Dashboards und Listen zu durchsuchen.',
@@ -213,7 +223,7 @@ const HISTORY = [
 ];
 
 function pageHeader(eyebrow, title, explainer, right='') {
-  return `<section class="page-head"><div><div class="eyebrow">${eyebrow}</div><h1 class="page-title">${title}</h1><p class="page-explainer">${explainer}</p></div>${right}</section>`;
+  return `<section class="page-head"><div><h1 class="page-title">${title}</h1><p class="page-explainer">${explainer}</p></div>${right}</section>`;
 }
 
 function lineChart({labels, series, yLabel=''}) {
@@ -270,7 +280,7 @@ function homeHTML(){
           <div class="flow-arrow">→</div>
           <div class="flow-box"><strong>Geschäftsführung</strong><p>Auffällige wirtschaftliche Fälle werden mit Beleg zur Entscheidung vorgelegt.</p></div>
         </div>
-        <div class="flow-footer"><span><b>Warenwirtschaft bleibt führend.</b></span><span>Beispieldaten · Konzept + Demo</span></div>
+        <div class="flow-footer"><span><b>Warenwirtschaft bleibt führend.</b></span></div>
       </div>
     </section>
     <section class="home-grid">
@@ -347,36 +357,66 @@ function opportunitiesHTML(){
 
 function actionsHTML(){
   const management = state.activeCampaign ? `<article class="action-card new"><div class="action-top"><div><div class="action-source">NEU · AUS MANAGEMENTENTSCHEIDUNG</div><h3>Brand X aktiv bei passenden Kunden vorstellen</h3><p>Geschäftsführung hat entschieden, den steigenden Bestand vier Wochen aktiv über passende Kundenprofile zu bearbeiten.</p></div><span class="chip teal">heute freigegeben</span></div><div class="action-stats"><div class="action-stat"><span>Passende Kunden</span><b>27</b></div><div class="action-stat"><span>Vertriebler</span><b>4</b></div><div class="action-stat"><span>angesprochen</span><b>${state.campaignProgress?21:0}</b></div><div class="action-stat"><span>gekauft</span><b>${state.campaignProgress?8:0}</b></div></div><div class="target-customers"><div class="target-row"><strong>Asia Markt Berlin</strong><span>kauft zwei vergleichbare Marken</span><button class="btn small">Brand X vorstellen</button></div><div class="target-row"><strong>Kim Gastro</strong><span>Brand X früher gekauft · letzter Kauf vor 4 Monaten</span><button class="btn small">Reaktivieren</button></div><div class="target-row"><strong>Dong Xuan Markt</strong><span>hohes Volumen in Kategorie · kein Brand X</span><button class="btn small">Sortiment prüfen</button></div></div>${!state.campaignProgress?`<div style="margin-top:14px"><button class="btn teal small" data-progress-campaign>Wirkung nach 4 Wochen simulieren</button></div>`:`<div class="success-box">Nach 4 Wochen: 21 Kunden angesprochen · 8 gekauft · +€18k Umsatz · Bestand −14 %. Häufigster Ablehnungsgrund: Preis.</div>`}</article>` : '';
-  return `${pageHeader('KUNDEN & VERTRIEB / VERTRIEBSAKTIONEN','Vertriebsaktionen.','Hier landen freigegebene Managemententscheidungen und konkrete Vertriebsfälle beim zuständigen Mitarbeiter. Erst nach Freigabe wird aus einem Managementfall eine Aufgabe.')}
+  return `${pageHeader('','Vertriebsaktionen','Freigegebene Entscheidungen und konkrete Kundenhinweise landen beim zuständigen Vertriebler. Eine Managementaktion erscheint hier erst nach der Freigabe.')}
     <section class="action-list">${management || `<div class="empty-state"><div class="empty-icon">✓</div><h3>Noch keine neue Managementaktion.</h3><p>Öffnen Sie unter Geschäftsführung den Fall „Brand X Bestand“ und starten Sie dort ausdrücklich eine Vertriebsaktion. Erst dann erscheint sie hier.</p><button class="btn primary" data-view="decisions">Zu den Entscheidungen</button></div>`}
       <article class="action-card"><div class="action-top"><div><div class="action-source">AUS VERKAUFSCHANCE</div><h3>3 Stammartikel bei Kunde 11807 prüfen</h3><p>Der Vertriebler kann beim nächsten Kontakt prüfen, ob Bedarf, Bezugsquelle oder Sortiment sich verändert hat.</p></div><span class="chip">offen</span></div></article>
       <article class="action-card"><div class="action-top"><div><div class="action-source">ANGEBOT</div><h3>Angebot 4481 nachfassen</h3><p>Seit 12 Tagen offen; vergleichbare Angebote dieses Kundentyps werden schneller entschieden.</p></div><span class="chip">zugewiesen</span></div></article>
     </section>`;
 }
 
+const INTEL_CARD_LABELS = {
+  assortment:'Sortimentslücke',
+  customerChange:'Kundenentwicklung',
+  newBrand:'Neue Marke',
+  top3:'Priorisierung',
+  margin:'Margenentwicklung',
+  priceResponse:'Preisreaktion',
+  stock:'Bestandsentwicklung',
+  demand:'Wareneingang',
+  offerFollow:'Angebot'
+};
+
+function miniIntelVisual(id){
+  if(id==='margin') return `<div class="mini-line"><svg viewBox="0 0 220 54" aria-hidden="true"><path d="M4 10 C46 12 70 22 106 27 S165 42 216 47"/><path class="alt" d="M4 12 C50 14 95 15 130 17 S180 18 216 19"/></svg></div>`;
+  if(id==='stock') return `<div class="mini-line"><svg viewBox="0 0 220 54" aria-hidden="true"><path class="amber" d="M4 47 C45 44 68 36 104 30 S160 18 216 8"/><path class="alt" d="M4 47 C60 45 105 43 150 41 S190 39 216 38"/></svg></div>`;
+  if(id==='customerChange') return `<div class="mini-bars"><i style="height:33%"></i><i style="height:70%"></i><i class="down" style="height:92%"></i></div>`;
+  if(id==='priceResponse') return `<div class="mini-line"><svg viewBox="0 0 220 54" aria-hidden="true"><path class="alt" d="M4 18 C55 18 93 20 132 18 S184 21 216 19"/><path d="M4 18 C52 24 86 31 126 35 S175 44 216 47"/></svg></div>`;
+  return '';
+}
+
 function caseCard(id, c){
-  return `<article class="question-row ${c.mode==='hypothesis'?'hypothesis':''}"><div><span class="tag ${c.mode==='hypothesis'?'hyp':''}">${c.mode==='hypothesis'?'Hypothese':'Beispiel'}</span><strong>${c.title}</strong><small>${c.text}</small></div><button class="btn small ${c.canLaunch?'warn':''}" data-intel="${id}">${c.tag}</button></article>`;
+  const dynamic=state.intelMode==='dynamic';
+  const visual=miniIntelVisual(id);
+  return `<button class="intel-card ${dynamic?'dynamic':'clear'} ${c.mode==='hypothesis'?'hypothesis':''}" data-intel="${id}">
+    <div class="intel-card-top"><span class="intel-kicker">${INTEL_CARD_LABELS[id]||c.type}</span>${c.mode==='hypothesis'?`<span class="intel-status">Hypothese</span>`:''}</div>
+    <div class="intel-metric">${c.metric||c.title}</div>
+    <div class="intel-submetric">${c.submetric||''}</div>
+    ${visual}
+    <div class="intel-question">${c.title}</div>
+    <div class="intel-open">Ansehen →</div>
+  </button>`;
+}
+
+function intelSection(title, note, ids){
+  return `<section class="intel-section"><div class="intel-section-head"><div><h2>${title}</h2>${note?`<p>${note}</p>`:''}</div></div><div class="intel-bubble-grid">${ids.map(id=>caseCard(id,INTELLIGENCE_CASES[id])).join('')}</div></section>`;
 }
 
 function decisionsHTML(){
-  return `${pageHeader('GESCHÄFTSFÜHRUNG / OFFENE ENTSCHEIDUNGEN','Offene Entscheidungen.','Wolke sucht wirtschaftlich auffällige Fälle in Kunden-, Preis-, Bestands- und Nachfragedaten und legt den Beleg dazu. Die Geschäftsführung entscheidet, was daraus wird.')}
-    <section class="management-intro">
-      <div class="decision-summary"><div class="eyebrow" style="color:#77d7c4">ABLAUF</div><h2>Erkannt → Beleg → Entscheidung → Ausführung → Wirkung</h2><p>Wolke legt den auffälligen Fall und die Grundlage dazu vor. Die Geschäftsführung entscheidet; danach wird festgehalten, was umgesetzt wurde und was daraus entstanden ist.</p></div>
-      <div class="management-guide"><h3>Fragen, die wir mit Ihnen prüfen wollen.</h3><p>Ein Teil ist als Beispiel dargestellt, ein Teil bewusst als Hypothese. Entscheidend ist, ob die Frage für Ihren Betrieb relevant ist und welche Daten eine belastbare Antwort brauchen.</p><ol><li>Ist die Frage relevant?</li><li>Wie lösen Sie sie heute?</li><li>Was müsste Wolke dafür sehen?</li><li>Welche Entscheidung würde daraus folgen?</li></ol></div>
-    </section>
-
-    <section class="intel-section"><div class="intel-section-head"><div><h2>Kunden & Sortiment</h2><p>Verkaufschancen und echte Kundenveränderungen verstehen.</p></div></div><div class="question-list">${caseCard('assortment',INTELLIGENCE_CASES.assortment)}${caseCard('customerChange',INTELLIGENCE_CASES.customerChange)}${caseCard('newBrand',INTELLIGENCE_CASES.newBrand)}${caseCard('top3',INTELLIGENCE_CASES.top3)}</div></section>
-
-    <section class="intel-section"><div class="intel-section-head"><div><h2>Preis & Marge</h2><p>Abweichungen erklären, bevor daraus eine Preisentscheidung wird.</p></div></div><div class="question-list">${caseCard('margin',INTELLIGENCE_CASES.margin)}${caseCard('priceResponse',INTELLIGENCE_CASES.priceResponse)}</div></section>
-
-    <section class="intel-section"><div class="intel-section-head"><div><h2>Bestand & Einkauf</h2><p>Kapitalbindung, Importplanung und Nachfrage zusammendenken.</p></div></div><div class="question-list">${caseCard('stock',INTELLIGENCE_CASES.stock)}${caseCard('demand',INTELLIGENCE_CASES.demand)}</div></section>
-
-    <section class="intel-section"><div class="intel-section-head"><div><h2>Angebote & Vertrieb</h2><p>Entscheidungen dort sichtbar machen, wo Menschen handeln können.</p></div></div><div class="question-list">${caseCard('offerFollow',INTELLIGENCE_CASES.offerFollow)}</div></section>`;
+  const modeToggle=`<div class="intel-mode-toggle" role="group" aria-label="Darstellung"><button class="${state.intelMode==='clear'?'active':''}" data-intel-mode="clear">Klar</button><button class="${state.intelMode==='dynamic'?'active':''}" data-intel-mode="dynamic">Dynamisch</button></div>`;
+  const modeLine='Wolke sucht in Kunden-, Preis-, Bestands- und Verkaufsdaten nach Dingen, die eine Entscheidung wert sein könnten.';
+  return `${pageHeader('','Offene Entscheidungen',modeLine,modeToggle)}
+    <div class="intel-mode-shell ${state.intelMode==='dynamic'?'dynamic-mode':'clear-mode'}">
+      ${state.intelMode==='dynamic'?`<div class="dynamic-banner"><span class="pulse-dot"></span><strong>Wolke meldet sich.</strong><span>4 Themen</span></div>`:''}
+      ${intelSection('Kunden & Sortiment','Was verändert sich beim Kunden, und wo könnte Geschäft liegen?',['assortment','customerChange','newBrand','top3'])}
+      ${intelSection('Preis & Marge','Wo verändert sich die Wirtschaftlichkeit, obwohl das Geschäft ähnlich aussieht?',['margin','priceResponse'])}
+      ${intelSection('Bestand & Einkauf','Wo bindet Ware Kapital, und wo könnte vor dem nächsten Wareneingang etwas fehlen?',['stock','demand'])}
+      ${intelSection('Angebote & Vertrieb','Welche offenen Chancen verdienen Aufmerksamkeit?',['offerFollow'])}
+    </div>`;
 }
 
 function historyHTML(){
   const liveRow = state.activeCampaign ? `<div class="history-row"><span>heute</span><strong>Brand X Bestand</strong><span>4 Wochen aktiv verkaufen</span><span>Geschäftsführung</span><span class="result">${state.campaignProgress?'+€18k · Bestand −14 %':'läuft'}</span><button class="history-open" data-history="live">›</button></div>` : '';
-  return `${pageHeader('GESCHÄFTSFÜHRUNG / ENTSCHEIDUNGSHISTORIE','Entscheidungshistorie.','Entscheidung, Begründung, Zuständigkeit und späteres Ergebnis bleiben zusammen. So lässt sich später prüfen, was tatsächlich funktioniert hat.')}
+  return `${pageHeader('','Entscheidungshistorie','Entscheidung, Begründung und Ergebnis bleiben zusammen. So wird sichtbar, was umgesetzt wurde und was danach passiert ist.')}
     <section class="history-table"><div class="history-row head"><span>Datum</span><span>Fall</span><span>Entscheidung</span><span>Verantwortlich</span><span>Ergebnis</span><span></span></div>${liveRow}${HISTORY.map((h,i)=>`<div class="history-row"><span>${h.date}</span><strong>${h.case}</strong><span>${h.decision}</span><span>${h.owner}</span><span class="result">${h.result}</span><button class="history-open" data-history="${i}">›</button></div>`).join('')}</section>`;
 }
 
@@ -396,8 +436,6 @@ function scheduleActiveDemo(){
 }
 
 function render(resetScroll=false){
-  const meta = VIEW_META[state.view];
-  $('#breadcrumbs').innerHTML = `${meta[0]} <span>›</span> <b>${meta[1]}</b>`;
   $$('.nav-item[data-view]').forEach(el=>el.classList.toggle('active',el.dataset.view===state.view));
   $('#salesActionBadge').classList.toggle('hidden',!state.activeCampaign);
   let html = '';
@@ -432,12 +470,12 @@ function openModal({eyebrow,title,recognized,evidence,question,discovery,canLaun
   $('#modalEyebrow').textContent=eyebrow;
   $('#modalTitle').textContent=title;
   $('#modalBody').innerHTML = `
-    <div class="detail-stage"><div class="detail-stage-label">1 · ERKANNT</div><h4>Was fällt auf?</h4><p>${recognized}</p></div>
-    <div class="detail-stage"><div class="detail-stage-label">2 · BELEG</div><h4>Woran soll Wolke das festmachen?</h4>${chart || ""}${evidenceTable(evidence)}<div style="margin-top:10px"><button class="btn small" data-rechenweg>Rechenweg / Datenquelle ansehen</button></div></div>
-    <div class="detail-stage"><div class="detail-stage-label">3 · FRAGE</div><h4>Welche wirtschaftliche Entscheidung entsteht daraus?</h4><p>${question}</p></div>
-    <div class="detail-stage"><div class="detail-stage-label">4 · IHRE ENTSCHEIDUNG</div><h4>Der Mensch entscheidet.</h4><div class="decision-options">${canLaunch?`<button class="btn teal" data-launch-sales>Vertriebsaktion starten</button><button class="btn">Einkauf prüfen</button><button class="btn">Beobachten</button><button class="btn danger-soft">Nicht relevant</button>`:`<button class="btn">Prüfen</button><button class="btn">Beobachten</button><button class="btn danger-soft">Nicht relevant</button>`}</div></div>
-    <div class="detail-stage"><div class="detail-stage-label">5 · AUSFÜHRUNG & WIRKUNG</div><h4>Erst nach der Entscheidung.</h4><p>${canLaunch?'Wenn Sie „Vertriebsaktion starten“ wählen, erscheint die neue Aktion bei den zuständigen Vertrieblern. Danach kann Wolke nachhalten, was ausgeführt wurde und was wirtschaftlich daraus entstand.':'Die konkrete Ausführung hängt von der Entscheidung ab. Wolke soll anschließend Status und beobachtbares Ergebnis nachhalten.'}</p></div>
-    <div class="discovery-questions"><strong>Fragen an den Kunden</strong><ul>${discovery.map(q=>`<li>${q}</li>`).join('')}</ul></div>`;
+    <div class="intel-modal-lead"><p>${recognized}</p>${chart || ''}</div>
+    <div class="intel-modal-question"><span>Entscheidung</span><strong>${question}</strong></div>
+    <div class="decision-options">${canLaunch?`<button class="btn teal" data-launch-sales>Vertriebsaktion starten</button><button class="btn">Einkauf prüfen</button><button class="btn">Beobachten</button><button class="btn danger-soft">Nicht relevant</button>`:`<button class="btn">Prüfen</button><button class="btn">Beobachten</button><button class="btn danger-soft">Nicht relevant</button>`}</div>
+    <div class="intel-evidence-toggle"><button class="btn small" data-rechenweg>Beleg / Datenbasis ansehen</button></div>
+    <div class="intel-evidence hidden" id="intelEvidence">${evidenceTable(evidence)}<p>Im echten Einsatz würden Datenquelle, Zeitraum, Filter und Berechnung für den Fall sichtbar dokumentiert.</p></div>
+    ${canLaunch?`<p class="intel-after-note">Eine Vertriebsaktion erscheint erst nach Ihrer Freigabe beim zuständigen Vertrieb.</p>`:''}`;
   $('#modalBackdrop').classList.remove('hidden');
   $('#modal').classList.remove('hidden');
 }
@@ -464,11 +502,11 @@ function openHistory(id){
 }
 
 function showRechenweg(){
-  const box=document.createElement('div');
-  box.className='detail-stage';
-  box.innerHTML=`<div class="detail-stage-label">RECHENWEG / DATENQUELLE</div><h4>Die Zahl soll angreifbar sein.</h4><p>Beispiel: Transaktionszeilen aus ERP/Qlik-Datenmodell → Kunden- und Artikelzuordnung → definierte Vergleichsgruppe → wirtschaftliche Kennzahl. In einer echten Einführung würden Datenquelle, Zeitraum, Filter und Berechnung sichtbar dokumentiert.</p><div class="evidence-table"><div class="evidence-row head"><span>Datenquelle</span><span>Zeitraum</span><span>Status</span></div><div class="evidence-row"><span>Auftragszeilen</span><span>12 Monate</span><span>vorhanden</span></div><div class="evidence-row"><span>Artikelstamm</span><span>aktuell</span><span>vorhanden</span></div><div class="evidence-row"><span>EK / VK / Rabatt</span><span>je Fall</span><span>zu verifizieren</span></div></div>`;
-  $('#modalBody').prepend(box);
-  const btn=$('[data-rechenweg]'); if(btn) btn.disabled=true;
+  const box=$('#intelEvidence');
+  if(!box) return;
+  box.classList.toggle('hidden');
+  const btn=$('[data-rechenweg]');
+  if(btn) btn.textContent=box.classList.contains('hidden')?'Beleg / Datenbasis ansehen':'Beleg ausblenden';
 }
 
 function launchSalesAction(){
@@ -479,7 +517,7 @@ function launchSalesAction(){
 }
 
 function resetDemo(){
-  clearDemoTimers();state.orderStep=0;state.voiceStep=0;state.activeCampaign=false;state.campaignProgress=0;state.dismissedCases.clear();
+  clearDemoTimers();state.orderStep=0;state.voiceStep=0;state.activeCampaign=false;state.campaignProgress=0;state.dismissedCases.clear();state.intelMode='clear';
   closeModal();navigate('home');
 }
 
@@ -488,6 +526,7 @@ document.addEventListener('click',e=>{
   const toggle=e.target.closest('[data-toggle]'); if(toggle){const g=toggle.closest('.nav-group');g.classList.toggle('open');toggle.setAttribute('aria-expanded',String(g.classList.contains('open')));return;}
   const order=e.target.closest('[data-order]'); if(order){if(order.dataset.order==='restart'){state.orderStep=0;render(false);}return;}
   const opp=e.target.closest('[data-opportunity]'); if(opp){openOpportunity(opp.dataset.opportunity);return;}
+  const intelMode=e.target.closest('[data-intel-mode]'); if(intelMode){state.intelMode=intelMode.dataset.intelMode;render(false);return;}
   const intel=e.target.closest('[data-intel]'); if(intel){openIntel(intel.dataset.intel);return;}
   const hist=e.target.closest('[data-history]'); if(hist){openHistory(hist.dataset.history);return;}
   if(e.target.closest('[data-rechenweg]')){showRechenweg();return;}
